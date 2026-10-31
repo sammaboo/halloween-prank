@@ -374,7 +374,7 @@
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
   };
-  const visits = (+store.get('boo-visits') || 0) + 1;
+  let visits = (+store.get('boo-visits') || 0) + 1;
   store.set('boo-visits', visits);
   let repeat = visits > 1;
 
@@ -529,9 +529,15 @@
     intro.hidden = false;
     await sleep(1100);
     if (repeat) {
+      const words = ['two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+      const round = words[visits - 2] || visits;
+      const jab = visits === 2 ? 'you really don’t learn.'
+        : visits === 3 ? 'ok this is getting embarrassing.'
+        : visits < 6 ? `${visits} times. i’m genuinely concerned.`
+        : 'at this point you’re just a fan.';
       await say('you scanned it AGAIN?', '', 1000);
-      await say('you really don’t learn.', '', 900);
-      await say('fine. round two.', 'red', 900);
+      await say(jab, '', 900);
+      await say(`fine. round ${round}.`, 'red', 900);
     } else {
       await say('why did you just open a phishing link?', '', 1100);
       await say(`nice ${device()} btw.`, '', 800);
@@ -730,7 +736,7 @@
     window.scrollTo(0, 0);
   }
 
-  document.getElementById('again').addEventListener('click', () => run());
+  document.getElementById('again').addEventListener('click', () => { store.set('boo-visits', ++visits); run(); });
 
   run();
 })();
