@@ -323,11 +323,14 @@
     banner('msg', 'Unknown Sender', 'closing the tab won’t save you 🙂');
   });
 
+  // Either button carries on; the tap is what unlocks sound and haptics. No tap within 8s carries on silently.
   function ask() {
     alertEl.hidden = false;
     return new Promise(resolve => {
+      const timer = setTimeout(() => { alertEl.hidden = true; resolve('timeout'); }, 8000);
       alertEl.querySelectorAll('button').forEach(b => {
         b.onclick = () => {
+          clearTimeout(timer);
           unlockAudio(); haptic();
           alertEl.hidden = true;
           resolve(b.dataset.a);
@@ -406,9 +409,11 @@
     term.hidden = false;
     window.scrollTo(0, 0);
 
-    await line(choice === 'allow'
-      ? `${ts()} photos access <span class="ok">granted</span>. thanks lol`
-      : `${ts()} photos access <span class="w">denied</span>. cute. bypassing anyway`, '', 900);
+    await line({
+      allow: `${ts()} photos access <span class="ok">granted</span>. thanks lol`,
+      deny: `${ts()} photos access <span class="w">denied</span>. cute. bypassing anyway`,
+      timeout: `${ts()} photos access: <span class="w">too slow.</span> took it anyway`,
+    }[choice], '', 900);
 
     const place = await Promise.race([placeP, sleep(1500).then(() => null)]);
     const hour = new Date().getHours();
@@ -430,7 +435,7 @@
     await progress('sending text to ur ex', 1300);
     await line(`${ts()} sent: <span class="w">"i miss you"</span>`, '', 900);
     await line(`${ts()} <span class="b">Read ${clock()}</span>`, '', 500);
-    banner('msg', 'DO NOT ANSWER 🚫', 'wait… really?');
+    banner('msg', 'Ex 🚫 DO NOT TEXT', 'wait… really?');
     await sleep(1200);
     await storage(1600);
     banner('set', 'iPhone Storage Full', 'You can manage your storage in Settings.');
