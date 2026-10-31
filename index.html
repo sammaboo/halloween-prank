@@ -159,12 +159,12 @@
 <div id="alert" role="alertdialog" aria-labelledby="alert-t" hidden>
   <div class="sheet">
     <div class="txt">
-      <div class="t" id="alert-t">“Safari” Would Like to Access Your Photos</div>
-      <div class="m">Required to finish uploading your camera roll.</div>
+      <div class="t" id="alert-t">Low Battery</div>
+      <div class="m">1% of battery remaining</div>
     </div>
     <div class="btns">
-      <button type="button" data-a="deny">Don’t Allow</button>
-      <button type="button" data-a="allow">Allow</button>
+      <button type="button" data-a="close">Close</button>
+      <button type="button" data-a="lowpower">Low Power Mode</button>
     </div>
   </div>
 </div>
@@ -410,9 +410,9 @@
     window.scrollTo(0, 0);
 
     await line({
-      allow: `${ts()} photos access <span class="ok">granted</span>. thanks lol`,
-      deny: `${ts()} photos access <span class="w">denied</span>. cute. bypassing anyway`,
-      timeout: `${ts()} photos access: <span class="w">too slow.</span> took it anyway`,
+      close: `${ts()} relax, your battery's fine. <span class="w">that popup was me.</span>`,
+      lowpower: `${ts()} low power mode <span class="w">won't save you.</span>`,
+      timeout: `${ts()} <span class="w">too slow.</span> already in.`,
     }[choice], '', 900);
 
     const place = await Promise.race([placeP, sleep(1500).then(() => null)]);
@@ -435,7 +435,7 @@
     await progress('sending text to ur ex', 1300);
     await line(`${ts()} sent: <span class="w">"i miss you"</span>`, '', 900);
     await line(`${ts()} <span class="b">Read ${clock()}</span>`, '', 500);
-    banner('msg', 'Ex 🚫 DO NOT TEXT', 'wait… really?');
+    banner('msg', 'Ex loml', 'wait… really?');
     await sleep(1200);
     await storage(1600);
     banner('set', 'iPhone Storage Full', 'You can manage your storage in Settings.');
