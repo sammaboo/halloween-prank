@@ -4,14 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#050806">
 <title>Costume Payload</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Rubik+Glitch&display=swap">
 <style>
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
   body { margin: 0; }
   [hidden] { display: none !important; }
-  /* Layout: a phone-sized terminal that fills the screen, then a centered reveal card. Single committed dark look. */
+  /* Layout: built for iPhone Safari. Full-screen callout, then a phone-sized terminal, then a centered reveal card. Single committed dark look. */
   :root {
     --bg: #050806;
     --fg: #c8ffd0;
@@ -25,13 +27,14 @@
     --display: "Rubik Glitch", "IBM Plex Mono", monospace;
     color-scheme: dark;
   }
-  html, body { height: 100%; -webkit-text-size-adjust: 100%; }
+  html, body { min-height: 100%; -webkit-text-size-adjust: 100%; }
   body {
     background: var(--bg);
     color: var(--fg);
     font-family: var(--mono);
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.5;
+    min-height: 100dvh;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
     padding-block: 20px;
@@ -45,15 +48,31 @@
     background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
     mix-blend-mode: multiply;
   }
+
+  #intro { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding-bottom: 8vh; }
+  #intro .bro {
+    font-family: var(--display); font-weight: 400; color: var(--bad);
+    font-size: clamp(72px, 26vw, 160px); line-height: .9; margin: 0;
+    animation: shake .35s steps(2) 3;
+  }
+  #intro .say { font-size: clamp(24px, 7vw, 40px); font-weight: 600; line-height: 1.2; margin: 0; text-wrap: balance; min-height: 1.2em; }
+  #intro .say.red { color: var(--bad); }
+  #intro .say.small { font-size: 15px; font-weight: 400; color: var(--dim); }
+  @keyframes shake {
+    0% { transform: translate(0, 0); } 25% { transform: translate(-6px, 3px); }
+    50% { transform: translate(5px, -4px); } 75% { transform: translate(-3px, -2px); } 100% { transform: translate(0, 0); }
+  }
+
   #term { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; }
   #term .l { display: block; }
   #term .k { color: var(--dim); }
   #term .ok { color: var(--hot); }
   #term .w { color: var(--warn); }
   #term .b { color: var(--bad); font-weight: 600; }
+  #term .big { font-size: 20px; margin-top: 8px; }
   .cursor::after { content: "█"; animation: blink 1s steps(1) infinite; color: var(--hot); }
   @keyframes blink { 50% { opacity: 0; } }
-  .bar { display: inline-block; width: min(260px, 60vw); height: 10px; border: 1px solid var(--dim); vertical-align: middle; margin-right: 8px; }
+  .bar { display: inline-block; width: min(240px, 58vw); height: 10px; border: 1px solid var(--dim); vertical-align: middle; margin-right: 8px; }
   .bar i { display: block; height: 100%; width: 0; background: var(--hot); transition: width .25s linear; }
 
   #flash { position: fixed; inset: 0; background: var(--bad); opacity: 0; pointer-events: none; z-index: 8; }
@@ -78,17 +97,13 @@
     background: var(--hot); color: #04110a; padding: 12px 18px; border: 0; cursor: pointer;
   }
   .btn:focus-visible, .ghost:focus-visible { outline: 2px solid var(--pumpkin); outline-offset: 3px; }
-  .btn.alt { background: var(--pumpkin); }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
   .row .btn { flex: 1; min-width: 120px; text-align: center; }
-  .num { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; text-align: left; border-top: 1px solid var(--dim); padding-top: 12px; }
-  .num .eyebrow { grid-column: 1 / -1; }
-  .digits { font-size: 20px; font-weight: 600; letter-spacing: .04em; font-variant-numeric: tabular-nums; user-select: all; }
-  .ghost { background: none; border: 1px solid var(--dim); color: var(--fg); padding: 10px 16px; font: inherit; cursor: pointer; }
-  .ghost.small { padding: 6px 12px; font-size: 12px; }
+  .ghost { background: none; border: 1px solid var(--dim); color: var(--fg); padding: 12px 16px; font: inherit; cursor: pointer; }
   @media (prefers-reduced-motion: reduce) {
     .cursor::after { animation: none; }
     #flash.go { animation: none; }
+    #intro .bro { animation: none; }
   }
 </style>
 </head>
@@ -96,7 +111,9 @@
 
 <div id="flash"></div>
 
-<div id="term" aria-live="polite"></div>
+<div id="intro" aria-live="polite"></div>
+
+<div id="term" aria-live="polite" hidden></div>
 
 <div id="reveal" hidden>
   <h1>jk.</h1>
@@ -106,7 +123,8 @@
     <div style="font-size:18px;font-weight:600">Sam Holtom</div>
     <p class="sub">Open to actual (non-malicious) connections.</p>
     <div class="row">
-      <a class="btn" id="li" href="https://www.linkedin.com/in/sam-holtom" target="_blank" rel="noopener">LinkedIn</a>    </div>
+      <a class="btn" id="li" href="https://www.linkedin.com/in/sam-holtom" target="_blank" rel="noopener">LinkedIn</a>
+    </div>
     <button class="ghost" id="again" type="button">Run it again</button>
   </div>
   <p class="sub">Happy Halloween 🎃</p>
@@ -114,21 +132,23 @@
 
 <script>
 (function () {
+  const intro = document.getElementById('intro');
   const term = document.getElementById('term');
   const reveal = document.getElementById('reveal');
   const flash = document.getElementById('flash');
+  const themeColor = document.querySelector('meta[name="theme-color"]');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function device() {
     const ua = navigator.userAgent;
-    if (/iPhone/.test(ua)) return 'iPhone (iOS)';
+    if (/iPhone/.test(ua)) return 'iPhone';
     if (/iPad/.test(ua) || (/Mac/.test(ua) && navigator.maxTouchPoints > 1)) return 'iPad';
-    if (/SM-|Samsung|SamsungBrowser/i.test(ua)) return 'Samsung Galaxy';
-    if (/Pixel/.test(ua)) return 'Google Pixel';
-    if (/Android/.test(ua)) return 'Android device';
+    if (/SM-|Samsung|SamsungBrowser/i.test(ua)) return 'Galaxy';
+    if (/Pixel/.test(ua)) return 'Pixel';
+    if (/Android/.test(ua)) return 'Android';
     if (/Mac/.test(ua)) return 'Mac';
-    if (/Windows/.test(ua)) return 'Windows PC';
-    return 'unknown device';
+    if (/Windows/.test(ua)) return 'PC';
+    return 'phone';
   }
   function browser() {
     const ua = navigator.userAgent;
@@ -144,6 +164,25 @@
   function stamp() { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
   const sleep = ms => new Promise(r => setTimeout(r, reduced ? Math.min(ms, 80) : ms));
 
+  async function say(text, cls, hold) {
+    const el = document.createElement('p');
+    el.className = 'say' + (cls ? ' ' + cls : '');
+    intro.appendChild(el);
+    for (const ch of text) { el.textContent += ch; await sleep(32); }
+    await sleep(hold);
+  }
+
+  async function callout() {
+    intro.innerHTML = '<p class="bro">bro.</p>';
+    intro.hidden = false;
+    await sleep(1100);
+    await say('why did you just open a phishing link?', '', 1100);
+    await say(`nice ${device()} btw.`, '', 800);
+    await say('you know imma hack it now, right?', 'red', 1500);
+    await say('too late. already in.', 'small', 900);
+    intro.hidden = true;
+  }
+
   async function line(html, cls, delay) {
     const el = document.createElement('span');
     el.className = 'l' + (cls ? ' ' + cls : '');
@@ -156,8 +195,10 @@
     return el;
   }
 
+  // Label on its own line so long labels never squeeze the bar on a narrow iPhone screen.
   async function progress(label, ms) {
-    const el = await line(`<span class="k">${label}</span> <span class="bar"><i></i></span><b>0%</b>`, '', 50);
+    await line(`<span class="k">[${stamp()}]</span> ${label}`, '', 150);
+    const el = await line(`<span class="bar"><i></i></span><b>0%</b>`, '', 50);
     const fill = el.querySelector('i'), pct = el.querySelector('b');
     const steps = 20;
     for (let i = 1; i <= steps; i++) {
@@ -168,27 +209,30 @@
     }
   }
 
-  async function run() {
+  async function run(skipIntro) {
     term.innerHTML = '';
     reveal.hidden = true;
-    term.hidden = false;
+    term.hidden = true;
     window.scrollTo(0, 0);
 
-    await line(`<span class="k">[${stamp()}]</span> qr_payload v2.1 — session opened`, '', 500);
-    await line(`<span class="k">[${stamp()}]</span> target: <span class="ok">${device()}</span> · ${browser()} · ${screen.width}×${screen.height}`, '', 700);
-    await line(`<span class="k">[${stamp()}]</span> handshake ............ <span class="ok">OK</span>`, '', 450);
-    await line(`<span class="k">[${stamp()}]</span> escalating privileges .. <span class="ok">OK</span>`, '', 650);
-    await progress('reading contacts', 1200);
-    await progress('indexing photos', 1600);
-    await progress('exporting messages', 1400);
-    await line(`<span class="k">[${stamp()}]</span> <span class="w">WARNING:</span> 2 unsent texts to your ex detected`, '', 900);
-    await line(`<span class="k">[${stamp()}]</span> <span class="w">WARNING:</span> 1,847 unread emails. yikes.`, '', 900);
-    await line(`<span class="k">[${stamp()}]</span> uploading to remote host ..`, '', 400);
-    await progress('upload', 1800);
-    await line(`<span class="b">!!! DEVICE COMPROMISED !!!</span>`, '', 300);
+    if (!skipIntro) await callout();
 
+    term.hidden = false;
+    await line(`<span class="k">[${stamp()}]</span> target: <span class="ok">${device()}</span> · ${browser()} · ${screen.width}×${screen.height}`, '', 600);
+    await line(`<span class="k">[${stamp()}]</span> bypassing Face ID ...... <span class="ok">OK</span>`, '', 600);
+    await progress('looking through your ChatGPT history', 1500);
+    await line(`<span class="k">[${stamp()}]</span> <span class="w">found:</span> "how to tell if someone likes you back" (x14)`, '', 1300);
+    await progress('uploading texts from mom to insta story', 1600);
+    await line(`<span class="k">[${stamp()}]</span> <span class="ok">posted.</span> 23 views already`, '', 1100);
+    await progress('sending text to ur ex', 1300);
+    await line(`<span class="k">[${stamp()}]</span> sent: <span class="w">"i miss you"</span>`, '', 900);
+    await line(`<span class="k">[${stamp()}]</span> <span class="b">Read ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>`, '', 1300);
+    await line(`<span class="b big">!!! DEVICE COMPROMISED !!!</span>`, '', 300);
+
+    themeColor.content = '#ff4d4d';
     flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
     await sleep(reduced ? 300 : 3300);
+    themeColor.content = '#050806';
 
     await line(``, '', 300);
     await line(`<span class="k">[${stamp()}]</span> ...`, '', 1200);
@@ -199,7 +243,7 @@
     window.scrollTo(0, 0);
   }
 
-  document.getElementById('again').addEventListener('click', run);
+  document.getElementById('again').addEventListener('click', () => run(true));
 
   run();
 })();
