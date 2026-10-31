@@ -490,6 +490,20 @@
     banner('msg', 'Unknown Sender', 'closing the tab won’t save you 🙂');
   });
 
+  // True fullscreen works on Android and iPad after a tap. iPhone Safari has no page fullscreen, so this quietly does nothing there.
+  function fullscreen(on) {
+    const d = document, root = d.documentElement;
+    try {
+      if (on && !(d.fullscreenElement || d.webkitFullscreenElement)) {
+        const p = (root.requestFullscreen || root.webkitRequestFullscreen)?.call(root, { navigationUI: 'hide' });
+        if (p && p.catch) p.catch(() => {});
+      } else if (!on && (d.fullscreenElement || d.webkitFullscreenElement)) {
+        const p = (d.exitFullscreen || d.webkitExitFullscreen)?.call(d);
+        if (p && p.catch) p.catch(() => {});
+      }
+    } catch (e) {}
+  }
+
   // Either button carries on; the tap is what unlocks sound and haptics. No tap within 8s carries on silently.
   function ask() {
     alertEl.hidden = false;
@@ -498,7 +512,7 @@
       alertEl.querySelectorAll('button').forEach(b => {
         b.onclick = () => {
           clearTimeout(timer);
-          unlockAudio(); haptic(); breach();
+          unlockAudio(); haptic(); breach(); fullscreen(true);
           alertEl.hidden = true;
           resolve(b.dataset.a);
         };
@@ -712,6 +726,7 @@
     victim.textContent = n ? (repeat ? `still victim #${n}. you’re in the records now.` : `you’re victim #${n}.`) : '';
     victim.hidden = !n;
 
+    fullscreen(false);
     term.hidden = true;
     reveal.hidden = false;
     running = false;
