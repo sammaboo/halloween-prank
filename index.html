@@ -17,7 +17,7 @@
   :root {
     --bg: #050806;
     --fg: #c8ffd0;
-    --dim: #4f7a58;
+    --dim: #6f9e79;
     --hot: #36ff6a;
     --warn: #ffb347;
     --bad: #ff4d4d;
@@ -63,9 +63,10 @@
     50% { transform: translate(5px, -4px); } 75% { transform: translate(-3px, -2px); } 100% { transform: translate(0, 0); }
   }
 
-  #term { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; }
-  #term .l { display: block; }
+  #term { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; font-size: 17px; line-height: 1.45; }
+  #term .l { display: block; margin-bottom: 2px; }
   #term .k { color: var(--dim); }
+  #term .ts { font-size: 12px; }
   #term .ok { color: var(--hot); }
   #term .w { color: var(--warn); }
   #term .b { color: var(--bad); font-weight: 600; }
@@ -248,7 +249,7 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const pad = n => String(n).padStart(2, '0');
   function stamp() { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
-  const ts = () => `<span class="k">[${stamp()}]</span>`;
+  const ts = () => `<span class="k ts">[${stamp()}]</span>`;
   const clock = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const sleep = ms => new Promise(r => setTimeout(r, reduced ? Math.min(ms, 80) : ms));
 
