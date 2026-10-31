@@ -132,7 +132,7 @@
     font-size: clamp(56px, 20vw, 140px); line-height: .9; margin: 0; color: var(--pumpkin);
     text-wrap: balance; letter-spacing: .02em;
   }
-  #reveal p { margin: 0; max-width: 34ch; color: var(--fg); font-size: 16px; }
+  #reveal p { margin: 0 auto; max-width: 34ch; color: var(--fg); font-size: 16px; text-wrap: balance; }
   #reveal .sub { color: var(--dim); font-size: 13px; }
   .card { background: var(--card); border: 1px solid var(--dim); padding: 18px 20px; max-width: 420px; width: 100%; display: grid; gap: 12px; }
   .card .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 11px; color: var(--dim); }
@@ -180,7 +180,7 @@
   <div class="card">
     <div class="eyebrow">Costume by</div>
     <div style="font-size:18px;font-weight:600">Sam Holtom</div>
-    <p class="sub">Open to actual (non-malicious) connections.</p>
+    <p class="sub">Open to actual (non&#8209;malicious) connections.</p>
     <div class="row">
       <a class="btn" id="li" href="https://www.linkedin.com/in/sam-holtom" target="_blank" rel="noopener">LinkedIn</a>
     </div>
@@ -278,19 +278,56 @@
     try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
     try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch (e) { ctx = null; }
   }
-  function tone(freq, at, dur, type, vol) {
+  // One oscillator gliding f0 -> f1. `hold` keeps it at full volume for that fraction of `dur` before fading; `lp` adds a low-pass filter.
+  function sweep(f0, f1, at, dur, { type = 'sine', vol = .1, lp, hold = 0 } = {}) {
     if (!ctx) return;
     const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + at;
-    o.type = type; o.frequency.value = freq;
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur);
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(vol, t + .01);
+    if (hold) g.gain.setValueAtTime(vol, t + dur * hold);
     g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-    o.connect(g).connect(ctx.destination);
-    o.start(t); o.stop(t + dur + .02);
+    let out = o;
+    if (lp) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp; o.connect(f); out = f; }
+    out.connect(g).connect(ctx.destination);
+    o.start(t); o.stop(t + dur + .05);
   }
-  const tick = () => tone(1800, 0, .025, 'square', .02);
-  const ding = () => { tone(1568, 0, .18, 'sine', .18); tone(2093, .12, .3, 'sine', .15); };
-  function alarm(sec) { for (let i = 0; i < sec * 4; i++) tone(i % 2 ? 660 : 880, i * .25, .22, 'square', .07); }
+  function noise(at, dur, vol, freq) {
+    if (!ctx) return;
+    const t = ctx.currentTime + at, len = Math.ceil(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = buf; f.type = 'bandpass'; f.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    s.connect(f).connect(g).connect(ctx.destination);
+    s.start(t);
+  }
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  // Data chirp per terminal line.
+  function chirp() {
+    const f = pick([1800, 2200, 2600, 3100]);
+    sweep(f, f * .5, 0, .045, { vol: .06 });
+    sweep(f * 1.5, f * 1.5, .05, .025, { type: 'square', vol: .015 });
+  }
+  // Progress blip, rising with the bar.
+  const blip = p => sweep(420 + p * 14, 420 + p * 14, 0, .035, { type: 'triangle', vol: .035 });
+  // iPhone-style notification ding, kept realistic on purpose.
+  const ding = () => { sweep(1568, 1568, 0, .18, { vol: .18 }); sweep(2093, 2093, .12, .3, { vol: .15 }); };
+  // Rising breach sweep when the hack starts.
+  const breach = () => { sweep(180, 2400, 0, .5, { type: 'sawtooth', vol: .06, lp: 2600, hold: .6 }); sweep(90, 1200, .05, .5, { vol: .08, hold: .6 }); };
+  // Boom + static + glitch stutter, then pulsing sci-fi sirens.
+  function compromised() {
+    [55, 55.6, 110].forEach(f => sweep(f, f * .6, 0, 2.4, { type: 'sawtooth', vol: .13, lp: 900, hold: .1 }));
+    noise(0, .6, .3, 1400);
+    for (let i = 0; i < 10; i++) sweep(200 + Math.random() * 2800, 120 + Math.random() * 300, .3 + i * .05, .04, { type: 'square', vol: .05 });
+    for (let i = 0; i < 4; i++) sweep(360, 1150, .9 + i * .6, .48, { type: 'triangle', vol: .15, lp: 3000, hold: .75 });
+  }
+  // Power-down drop before the reveal.
+  const powerDown = () => sweep(900, 40, 0, 1.1, { type: 'sawtooth', vol: .09, lp: 1400, hold: .3 });
 
   // Haptics. Android has navigator.vibrate; iOS 18+ Safari ticks the Taptic Engine when a switch-style checkbox is toggled.
   function haptic() {
@@ -332,7 +369,7 @@
       alertEl.querySelectorAll('button').forEach(b => {
         b.onclick = () => {
           clearTimeout(timer);
-          unlockAudio(); haptic();
+          unlockAudio(); haptic(); breach();
           alertEl.hidden = true;
           resolve(b.dataset.a);
         };
@@ -364,7 +401,7 @@
     term.querySelectorAll('.cursor').forEach(c => c.classList.remove('cursor'));
     el.classList.add('cursor');
     term.appendChild(el);
-    tick();
+    chirp();
     window.scrollTo(0, document.body.scrollHeight);
     await sleep(delay ?? 350);
     return el;
@@ -381,6 +418,7 @@
       const p = Math.round(i / steps * 100);
       fill.style.width = p + '%';
       pct.textContent = p + '%';
+      blip(p);
     }
   }
 
@@ -394,6 +432,7 @@
       const p = i / steps * 100;
       fill.style.clipPath = `inset(0 ${100 - p}% 0 0)`;
       gb.textContent = `${(p / 100 * 128).toFixed(1)} / 128 GB`;
+      blip(p);
     }
   }
 
@@ -444,13 +483,15 @@
     await line(`<span class="b big">!!! DEVICE COMPROMISED !!!</span>`, '', 300);
 
     themeColor.content = '#ff4d4d';
-    alarm(3); buzz(6);
+    compromised(); buzz(6);
     flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
     await sleep(reduced ? 300 : 3300);
     themeColor.content = '#050806';
 
     await line(``, '', 300);
-    await line(`${ts()} ...`, '', 1200);
+    await line(`${ts()} ...`, '', 0);
+    powerDown();
+    await sleep(1200);
     await line(`${ts()} ok wait`, '', 1100);
 
     term.hidden = true;
