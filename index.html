@@ -13,7 +13,7 @@
   html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
   body { margin: 0; }
   [hidden] { display: none !important; }
-  /* Layout: built for iPhone Safari. Full-screen callout, then a phone-sized terminal, then a centered reveal card. Single committed dark look. */
+  /* Layout: built for iPhone Safari. Full-screen callout, fake iOS alert, phone-sized terminal with fake iOS banners, then a centered reveal card. Single committed dark look. */
   :root {
     --bg: #050806;
     --fg: #c8ffd0;
@@ -25,6 +25,7 @@
     --pumpkin: #ff7a1a;
     --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     --display: "Rubik Glitch", "IBM Plex Mono", monospace;
+    --ios: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     color-scheme: dark;
   }
   html, body { min-height: 100%; -webkit-text-size-adjust: 100%; }
@@ -57,7 +58,6 @@
   }
   #intro .say { font-size: clamp(24px, 7vw, 40px); font-weight: 600; line-height: 1.2; margin: 0; text-wrap: balance; min-height: 1.2em; }
   #intro .say.red { color: var(--bad); }
-  #intro .say.small { font-size: 15px; font-weight: 400; color: var(--dim); }
   @keyframes shake {
     0% { transform: translate(0, 0); } 25% { transform: translate(-6px, 3px); }
     50% { transform: translate(5px, -4px); } 75% { transform: translate(-3px, -2px); } 100% { transform: translate(0, 0); }
@@ -74,10 +74,53 @@
   @keyframes blink { 50% { opacity: 0; } }
   .bar { display: inline-block; width: min(240px, 58vw); height: 10px; border: 1px solid var(--dim); vertical-align: middle; margin-right: 8px; }
   .bar i { display: block; height: 100%; width: 0; background: var(--hot); transition: width .25s linear; }
+  .bar.store { width: min(180px, 44vw); }
+  .bar.store i { width: 100%; clip-path: inset(0 100% 0 0); transition: clip-path .2s linear;
+    background: linear-gradient(90deg, #ff453a 0 28%, #ffd60a 28% 58%, #30d158 58% 78%, #8e8e93 78%); }
 
   #flash { position: fixed; inset: 0; background: var(--bad); opacity: 0; pointer-events: none; z-index: 8; }
   #flash.go { animation: flash 1.1s steps(2) 3; }
   @keyframes flash { 0%,100% { opacity: 0; } 50% { opacity: .35; } }
+
+  /* Fake iOS notification banners */
+  #banners {
+    position: fixed; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 8px; right: 8px; z-index: 20;
+    max-width: 430px; margin: 0 auto; display: grid; gap: 8px; pointer-events: none; font-family: var(--ios);
+  }
+  .note {
+    display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 22px; color: #fff;
+    background: rgba(44,44,46,.82); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+    box-shadow: 0 8px 30px rgba(0,0,0,.45);
+    transform: translateY(-140%); opacity: 0; transition: transform .45s cubic-bezier(.2,.9,.3,1.15), opacity .3s;
+  }
+  .note.in { transform: none; opacity: 1; }
+  .note .ic { width: 38px; height: 38px; border-radius: 9px; flex: none; position: relative; display: grid; place-items: center; font-size: 22px; }
+  .ic.msg { background: linear-gradient(#5df777, #0abd2b); }
+  .ic.msg::after { content: ""; position: absolute; left: 7px; top: 9px; width: 24px; height: 19px; background: #fff; border-radius: 50%; }
+  .ic.set { background: linear-gradient(#a3a3a8, #6e6e73); }
+  .nb { flex: 1; min-width: 0; font-size: 15px; line-height: 1.3; }
+  .nh { display: flex; justify-content: space-between; gap: 8px; }
+  .nh b { font-weight: 600; }
+  .nh span { color: rgba(255,255,255,.55); font-size: 13px; }
+
+  /* Fake iOS permission alert */
+  #alert {
+    position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px;
+    background: rgba(0,0,0,.45); font-family: var(--ios); animation: fade .2s ease-out;
+  }
+  #alert .sheet {
+    width: 270px; border-radius: 14px; overflow: hidden; color: #fff; text-align: center;
+    background: rgba(44,44,46,.85); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+    animation: pop .25s ease-out;
+  }
+  #alert .txt { padding: 19px 16px 18px; }
+  #alert .t { font-size: 17px; font-weight: 600; line-height: 1.3; }
+  #alert .m { font-size: 13px; line-height: 1.35; margin-top: 4px; }
+  #alert .btns { display: grid; grid-template-columns: 1fr 1fr; border-top: .5px solid rgba(255,255,255,.2); }
+  #alert button { font: inherit; font-size: 17px; color: #0a84ff; background: none; border: 0; height: 44px; cursor: pointer; }
+  #alert button + button { border-left: .5px solid rgba(255,255,255,.2); }
+  @keyframes pop { from { transform: scale(1.15); opacity: 0; } }
+  @keyframes fade { from { opacity: 0; } }
 
   #reveal {
     flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 22px;
@@ -103,13 +146,28 @@
   @media (prefers-reduced-motion: reduce) {
     .cursor::after { animation: none; }
     #flash.go { animation: none; }
-    #intro .bro { animation: none; }
+    #intro .bro, #alert, #alert .sheet { animation: none; }
+    .note { transition: none; }
   }
 </style>
 </head>
 <body>
 
 <div id="flash"></div>
+<div id="banners" aria-live="assertive"></div>
+
+<div id="alert" role="alertdialog" aria-labelledby="alert-t" hidden>
+  <div class="sheet">
+    <div class="txt">
+      <div class="t" id="alert-t">“Safari” Would Like to Access Your Photos</div>
+      <div class="m">Required to finish uploading your camera roll.</div>
+    </div>
+    <div class="btns">
+      <button type="button" data-a="deny">Don’t Allow</button>
+      <button type="button" data-a="allow">Allow</button>
+    </div>
+  </div>
+</div>
 
 <div id="intro" aria-live="polite"></div>
 
@@ -136,8 +194,11 @@
   const term = document.getElementById('term');
   const reveal = document.getElementById('reveal');
   const flash = document.getElementById('flash');
+  const banners = document.getElementById('banners');
+  const alertEl = document.getElementById('alert');
   const themeColor = document.querySelector('meta[name="theme-color"]');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let running = false, nagged = false;
 
   function device() {
     const ua = navigator.userAgent;
@@ -150,6 +211,26 @@
     if (/Windows/.test(ua)) return 'PC';
     return 'phone';
   }
+  // Safari hides the exact model, but screen size + pixel ratio narrows it to a family.
+  function model() {
+    if (!/iPhone/.test(navigator.userAgent)) return device();
+    const w = Math.min(screen.width, screen.height), h = Math.max(screen.width, screen.height);
+    return ({
+      '320x568@2': 'iPhone SE (1st gen)',
+      '375x667@2': 'iPhone SE / 8',
+      '414x736@3': 'iPhone 8 Plus',
+      '375x812@3': 'iPhone 13 mini / 12 mini / 11 Pro',
+      '414x896@2': 'iPhone 11 / XR',
+      '414x896@3': 'iPhone 11 Pro Max',
+      '390x844@3': 'iPhone 14 / 13 / 12 / 16e',
+      '428x926@3': 'iPhone 14 Plus / 13 Pro Max',
+      '393x852@3': 'iPhone 16 / 15 / 15 Pro',
+      '430x932@3': 'iPhone 16 Plus / 15 Pro Max',
+      '402x874@3': 'iPhone 17 / 17 Pro / 16 Pro',
+      '420x912@3': 'iPhone Air',
+      '440x956@3': 'iPhone 17 Pro Max / 16 Pro Max',
+    })[`${w}x${h}@${devicePixelRatio}`] || 'iPhone';
+  }
   function browser() {
     const ua = navigator.userAgent;
     if (/SamsungBrowser/.test(ua)) return 'Samsung Internet';
@@ -160,9 +241,100 @@
     if (/Edg/.test(ua)) return 'Edge';
     return 'browser';
   }
+  function language() {
+    const l = navigator.language || 'en-US';
+    try { return new Intl.DisplayNames(['en'], { type: 'language' }).of(l); } catch (e) { return l; }
+  }
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const pad = n => String(n).padStart(2, '0');
   function stamp() { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+  const ts = () => `<span class="k">[${stamp()}]</span>`;
+  const clock = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const sleep = ms => new Promise(r => setTimeout(r, reduced ? Math.min(ms, 80) : ms));
+
+  // Approximate city from IP, looked up once at load. Mobile carrier IPs can land a city or two off; any failure just skips the line.
+  const placeP = (async () => {
+    const sources = [
+      ['https://ipapi.co/json/', d => d.city && [d.city, d.region]],
+      ['https://ipwho.is/', d => d.success && d.city && [d.city, d.region]],
+    ];
+    for (const [url, pick] of sources) {
+      try {
+        const c = new AbortController();
+        const t = setTimeout(() => c.abort(), 3000);
+        const r = await fetch(url, { signal: c.signal });
+        clearTimeout(t);
+        const v = pick(await r.json());
+        if (v) return v[1] && v[1] !== v[0] ? `${v[0]}, ${v[1]}` : v[0];
+      } catch (e) {}
+    }
+    return null;
+  })();
+
+  // Sound. iOS only allows audio after a tap, so this is unlocked from the fake alert's buttons.
+  let ctx = null;
+  function unlockAudio() {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch (e) { ctx = null; }
+  }
+  function tone(freq, at, dur, type, vol) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + at;
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + .01);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(t); o.stop(t + dur + .02);
+  }
+  const tick = () => tone(1800, 0, .025, 'square', .02);
+  const ding = () => { tone(1568, 0, .18, 'sine', .18); tone(2093, .12, .3, 'sine', .15); };
+  function alarm(sec) { for (let i = 0; i < sec * 4; i++) tone(i % 2 ? 660 : 880, i * .25, .22, 'square', .07); }
+
+  // Haptics. Android has navigator.vibrate; iOS 18+ Safari ticks the Taptic Engine when a switch-style checkbox is toggled.
+  function haptic() {
+    try {
+      const l = document.createElement('label'), i = document.createElement('input');
+      i.type = 'checkbox'; i.setAttribute('switch', '');
+      l.style.display = 'none'; l.appendChild(i);
+      document.head.appendChild(l); l.click(); l.remove();
+    } catch (e) {}
+  }
+  function buzz(n) {
+    if (navigator.vibrate) { navigator.vibrate(Array.from({ length: n * 2 - 1 }, (_, i) => i % 2 ? 80 : 60)); return; }
+    for (let i = 0; i < n; i++) setTimeout(haptic, i * 140);
+  }
+
+  function banner(icon, title, msg) {
+    const el = document.createElement('div');
+    el.className = 'note';
+    el.innerHTML = `<div class="ic ${icon}">${icon === 'set' ? '⚙️' : ''}</div>
+      <div class="nb"><div class="nh"><b>${title}</b><span>now</span></div><div>${msg}</div></div>`;
+    banners.prepend(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+    ding(); buzz(2);
+    setTimeout(() => { el.classList.remove('in'); setTimeout(() => el.remove(), 450); }, 3800);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !running || nagged) return;
+    nagged = true;
+    if (ctx) ctx.resume();
+    banner('msg', 'Unknown Sender', 'closing the tab won’t save you 🙂');
+  });
+
+  function ask() {
+    alertEl.hidden = false;
+    return new Promise(resolve => {
+      alertEl.querySelectorAll('button').forEach(b => {
+        b.onclick = () => {
+          unlockAudio(); haptic();
+          alertEl.hidden = true;
+          resolve(b.dataset.a);
+        };
+      });
+    });
+  }
 
   async function say(text, cls, hold) {
     const el = document.createElement('p');
@@ -178,9 +350,7 @@
     await sleep(1100);
     await say('why did you just open a phishing link?', '', 1100);
     await say(`nice ${device()} btw.`, '', 800);
-    await say('you know imma hack it now, right?', 'red', 1500);
-    await say('too late. already in.', 'small', 900);
-    intro.hidden = true;
+    await say('you know imma hack it now, right?', 'red', 900);
   }
 
   async function line(html, cls, delay) {
@@ -190,6 +360,7 @@
     term.querySelectorAll('.cursor').forEach(c => c.classList.remove('cursor'));
     el.classList.add('cursor');
     term.appendChild(el);
+    tick();
     window.scrollTo(0, document.body.scrollHeight);
     await sleep(delay ?? 350);
     return el;
@@ -197,7 +368,7 @@
 
   // Label on its own line so long labels never squeeze the bar on a narrow iPhone screen.
   async function progress(label, ms) {
-    await line(`<span class="k">[${stamp()}]</span> ${label}`, '', 150);
+    await line(`${ts()} ${label}`, '', 150);
     const el = await line(`<span class="bar"><i></i></span><b>0%</b>`, '', 50);
     const fill = el.querySelector('i'), pct = el.querySelector('b');
     const steps = 20;
@@ -209,41 +380,80 @@
     }
   }
 
-  async function run(skipIntro) {
+  async function storage(ms) {
+    await line(`${ts()} filling your storage with pumpkin pics 🎃`, '', 150);
+    const el = await line(`<span class="bar store"><i></i></span><b>0.0 / 128 GB</b>`, '', 50);
+    const fill = el.querySelector('i'), gb = el.querySelector('b');
+    const steps = 20;
+    for (let i = 1; i <= steps; i++) {
+      await sleep(ms / steps);
+      const p = i / steps * 100;
+      fill.style.clipPath = `inset(0 ${100 - p}% 0 0)`;
+      gb.textContent = `${(p / 100 * 128).toFixed(1)} / 128 GB`;
+    }
+  }
+
+  async function run() {
+    running = true; nagged = false;
     term.innerHTML = '';
     reveal.hidden = true;
     term.hidden = true;
     window.scrollTo(0, 0);
 
-    if (!skipIntro) await callout();
-
+    await callout();
+    const choice = await ask();
+    intro.hidden = true;
     term.hidden = false;
-    await line(`<span class="k">[${stamp()}]</span> target: <span class="ok">${device()}</span> · ${browser()} · ${screen.width}×${screen.height}`, '', 600);
-    await line(`<span class="k">[${stamp()}]</span> bypassing Face ID ...... <span class="ok">OK</span>`, '', 600);
+    window.scrollTo(0, 0);
+
+    await line(choice === 'allow'
+      ? `${ts()} photos access <span class="ok">granted</span>. thanks lol`
+      : `${ts()} photos access <span class="w">denied</span>. cute. bypassing anyway`, '', 900);
+
+    const place = await Promise.race([placeP, sleep(1500).then(() => null)]);
+    const hour = new Date().getHours();
+    const day = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    await line(`${ts()} target: <span class="ok">${model()}</span> · ${browser()}`, '', 700);
+    if (place) await line(`${ts()} location: near <span class="ok">${esc(place)}</span>`, '', 800);
+    await line(`${ts()} local time: ${clock()}, ${day}${hour >= 22 || hour < 5 ? ' <span class="w">(why are you scanning shirts rn)</span>' : ''}`, '', 700);
+    await line(`${ts()} language: ${esc(language())}`, '', 500);
+    await line(`${ts()} display: ${matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark mode <span class="k">(respect)</span>' : 'light mode <span class="w">(bold choice)</span>'}`, '', 700);
+    await line(`${ts()} bypassing Face ID ...... <span class="ok">OK</span>`, '', 600);
+
     await progress('looking through your ChatGPT history', 1500);
-    await line(`<span class="k">[${stamp()}]</span> <span class="w">found:</span> "how to tell if someone likes you back" (x14)`, '', 1300);
+    await line(`${ts()} <span class="w">found:</span> "how to tell if someone likes you back" (x14)`, '', 1300);
     await progress('uploading texts from mom to insta story', 1600);
-    await line(`<span class="k">[${stamp()}]</span> <span class="ok">posted.</span> 23 views already`, '', 1100);
+    await line(`${ts()} <span class="ok">posted.</span> 23 views already`, '', 500);
+    banner('msg', 'Mom ❤️', 'why is our convo on your story??');
+    await sleep(1200);
     await progress('sending text to ur ex', 1300);
-    await line(`<span class="k">[${stamp()}]</span> sent: <span class="w">"i miss you"</span>`, '', 900);
-    await line(`<span class="k">[${stamp()}]</span> <span class="b">Read ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>`, '', 1300);
+    await line(`${ts()} sent: <span class="w">"i miss you"</span>`, '', 900);
+    await line(`${ts()} <span class="b">Read ${clock()}</span>`, '', 500);
+    banner('msg', 'DO NOT ANSWER 🚫', 'wait… really?');
+    await sleep(1200);
+    await storage(1600);
+    banner('set', 'iPhone Storage Full', 'You can manage your storage in Settings.');
+    await sleep(1000);
     await line(`<span class="b big">!!! DEVICE COMPROMISED !!!</span>`, '', 300);
 
     themeColor.content = '#ff4d4d';
+    alarm(3); buzz(6);
     flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
     await sleep(reduced ? 300 : 3300);
     themeColor.content = '#050806';
 
     await line(``, '', 300);
-    await line(`<span class="k">[${stamp()}]</span> ...`, '', 1200);
-    await line(`<span class="k">[${stamp()}]</span> ok wait`, '', 1100);
+    await line(`${ts()} ...`, '', 1200);
+    await line(`${ts()} ok wait`, '', 1100);
 
     term.hidden = true;
     reveal.hidden = false;
+    running = false;
     window.scrollTo(0, 0);
   }
 
-  document.getElementById('again').addEventListener('click', () => run(true));
+  document.getElementById('again').addEventListener('click', () => run());
 
   run();
 })();
